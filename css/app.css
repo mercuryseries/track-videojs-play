@@ -1,0 +1,29 @@
+body {
+    font-family: Lato, Helvetica, sans-serif;
+    background-color: #eaeaea;
+}
+
+.video_wrapper {
+    width: 60%;
+    background: #fff;
+    max-width: 1800px;
+    margin: 3em auto auto;
+    border: 1px solid #eaeaea;
+    border-bottom-width: 4px;
+    border-radius: 3px;
+    padding: 17px;
+}
+
+.sweet-alert {
+    font-family: Lato, Helvetica, sans-serif;
+}
+
+h1 {
+    text-align: center;
+    color: #777;
+}
+
+video {
+    outline: 8px solid #fff;
+    box-shadow: 5px 8px 3px #fff;
+}
