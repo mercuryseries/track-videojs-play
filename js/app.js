@@ -101,6 +101,8 @@ var VideoPlayer = {
     setDefaultVolume: function() {
         var currentVolume = WebStore.get("tdn_volume");
 
+        console.log(currentVolume);
+
         if(currentVolume) {
             this.player.volume(currentVolume);
         }
