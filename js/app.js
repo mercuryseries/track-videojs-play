@@ -1,26 +1,19 @@
-/**
- * VideoJS Time Tracker with possibility to pick up where we last left off.
+/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ * VideoJS Time Tracker
  *
- * 24/07/2016
- *
- * @author Honore Hounwanou
- */
+ * @author LES TEACHERS DU NET
+ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
-// Video Tracking Timer
-var playerRecordingLoop;
+"use strict";
 
-// Adapter for localStorage in order to be able to switch WebStore easily
-var WebStore = {
-    get: function(item) {
-        return localStorage.getItem(item);
-    },
-    set: function(item, value) {
-        return localStorage.setItem(item, value);
-    },
-    remove: function(item) {
-        return localStorage.removeItem(item);
+function localStorageIsAvailable()
+{
+    try {
+        return 'localStorage' in window && window['localStorage'] !== null;
+    } catch(e) {
+        return false;
     }
-};
+}
 
 // Small Utility for retrieving a QueryString param.
 var RequestUtils = {
@@ -35,14 +28,18 @@ var RequestUtils = {
     }
 };
 
-// Main VideoPlayer Object
-var VideoPlayer = {
+var playerRecordingLoop;
 
+var VideoPlayerTracker = {
     initialize: function(player, time, autoplay) {
-        this.player = player;
-        this.time = time;
-        this.autoplay = autoplay;
-        this.addEventListeners();
+        if( localStorageIsAvailable() ) {
+            this.player = player;
+            this.time = time;
+            this.autoplay = autoplay;
+            this.addEventListeners();
+        } else {
+            alert('You need to have the localStorage enabled in order to use this tracker!');
+        }
     },
 
     addEventListeners: function() {
@@ -51,10 +48,10 @@ var VideoPlayer = {
         this.player.on("ended", this.onEnd.bind(this));
         this.player.on("volumechange", this.onVolumeChange.bind(this));
 
-        // Playback rates listeners
-        var playbackRates = document.querySelectorAll('.vjs-menu-item');
-        for (var i = 0; i < playbackRates.length; i++) {
-          playbackRates[i].addEventListener('click', this.onPlaybackRateChange.bind(this), false);
+        // Event Listeners for PlackbackRate items
+        var plackbackRates = document.querySelectorAll('.vjs-menu-item');
+        for (var i = 0; i < plackbackRates.length; i++) {
+            plackbackRates[i].addEventListener('click', this.onPlaybackRateChange.bind(this));
         }
     },
 
@@ -63,7 +60,7 @@ var VideoPlayer = {
     },
 
     onPlay: function() {
-        if(this.currentTime() <= 1) {
+        if(this.currentTime() < 1) {
             this.startAt(0);
         }
 
@@ -74,34 +71,22 @@ var VideoPlayer = {
         this.stopRecordingPosition();
     },
 
-    beginRecordingPosition: function() {
-        playerRecordingLoop = setInterval(function() {
-            WebStore.set(this.id(), this.currentTime());
-        }.bind(this), 3000);
-    },
-
-    stopRecordingPosition: function() {
-        clearInterval(playerRecordingLoop);
-        WebStore.remove(this.id());
-    },
-
     onVolumeChange: function() {
-        WebStore.set("tdn_volume", this.player.volume());
+        localStorage.setItem('tdn_volume', this.player.volume());
     },
 
     onPlaybackRateChange: function() {
-        WebStore.set("tdn_playback_speed", this.player.playbackRate());
+        localStorage.setItem('tdn_playback_speed', this.player.playbackRate());
     },
 
     setStartPoint: function() {
         this.startAt(this.getVideoStartTime());
+
         return this;
     },
 
     setDefaultVolume: function() {
-        var currentVolume = WebStore.get("tdn_volume");
-
-        console.log(currentVolume);
+        var currentVolume = localStorage.getItem('tdn_volume');
 
         if(currentVolume) {
             this.player.volume(currentVolume);
@@ -111,22 +96,13 @@ var VideoPlayer = {
     },
 
     setDefaultPlaybackSpeed: function() {
-        var currentPlayBackSpeed = WebStore.get("tdn_playback_speed");
+        var currentPlaybackSpeed = localStorage.getItem('tdn_playback_speed');
 
-        if(currentPlayBackSpeed) {
-            this.player.playbackRate(currentPlayBackSpeed);
+        if(currentPlaybackSpeed) {
+            this.player.playbackRate(currentPlaybackSpeed);
         }
 
         return this;
-    },
-
-    hasPreviouslyBeenWatched: function() {
-        var secondsWatchedSoFar = WebStore.get(this.id());
-        return (secondsWatchedSoFar && secondsWatchedSoFar > 3)
-    },
-
-    secondsWatchedSoFar: function() {
-        return WebStore.get(this.id()) - 3;
     },
 
     promptUser: function() {
@@ -141,31 +117,43 @@ var VideoPlayer = {
         return this;
     },
 
-    play: function() {
-        this.player.play();
-    },
-
     promptUserToContinue: function() {
         var that = this;
+
         swal({
             title: "Continuer la vidéo",
             text: "Souhaitez-vous reprendre là où vous vous êtes arrêté?",
-            html: true,
             showCancelButton: true,
             confirmButtonText: "Oui",
             cancelButtonText: "Recommencer"
-        }, function(confirm) {
-            if( confirm ) {
-                return that.startAt(that.secondsWatchedSoFar()).play();
+        }, function(confirm){
+            if(confirm) {
+                return that.startAt(that.secondsWatchedSoFar() - 3).play();
             }
 
             that.stopRecordingPosition();
+
             return that.startAt(that.getVideoStartTime()).play();
         });
     },
 
+    beginRecordingPosition: function() {
+        playerRecordingLoop = setInterval(function(){
+            localStorage.setItem(this.id(), this.currentTime());
+        }.bind(this), 3000);
+    },
+
+    stopRecordingPosition: function() {
+        clearInterval(playerRecordingLoop);
+        localStorage.removeItem(this.id());
+    },
+
     startAt: function(time) {
         return this.player.currentTime(time);
+    },
+
+    play: function() {
+        return this.player.play();
     },
 
     currentTime: function() {
@@ -176,12 +164,24 @@ var VideoPlayer = {
         return "tdn_video:" + location.pathname;
     },
 
+    hasPreviouslyBeenWatched: function() {
+        var secondsWatched = this.secondsWatchedSoFar();
+
+        return !! (secondsWatched && secondsWatched > 3);
+    },
+
+    secondsWatchedSoFar: function() {
+        return localStorage.getItem(this.id());
+    },
+
     getVideoStartTime: function() {
-        if (!this.time) return 1;
-        if (this.time.indexOf(":") > -1) {
-            var t = this.time.split(":");
-            return 60 * parseInt(t[0]) + parseInt(t[1]);
+        if(!this.time) return 0;
+
+        if(typeof this.time === 'string' && this.time.indexOf(":") > -1) {
+            var t = this.time.split(':');
+            return 60 * parseInt(t[0]) + parseInt(t[1])
         }
+
         return parseInt(this.time);
     }
 };
