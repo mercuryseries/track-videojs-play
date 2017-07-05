@@ -48,10 +48,10 @@ var VideoPlayerTracker = {
         this.player.on("ended", this.onEnd.bind(this));
         this.player.on("volumechange", this.onVolumeChange.bind(this));
 
-        // Event Listeners for PlackbackRate items
-        var plackbackRates = document.querySelectorAll('.vjs-menu-item');
-        for (var i = 0; i < plackbackRates.length; i++) {
-            plackbackRates[i].addEventListener('click', this.onPlaybackRateChange.bind(this));
+        // Event Listeners for PlaybackRate items
+        var playbackRates = document.querySelectorAll('.vjs-menu-item');
+        for (var i = 0; i < playbackRates.length; i++) {
+            playbackRates[i].addEventListener('click', this.onPlaybackRateChange.bind(this));
         }
     },
 
